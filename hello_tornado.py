@@ -26,6 +26,9 @@ def _wrap_word(word):
 
     return dict
 
+class WordExistsExcept(Exception):
+    pass
+
 class WordStore(object):
     __db = None
 
@@ -40,14 +43,27 @@ class WordStore(object):
     def __init__(self):
         WordStore.init()
 
+    def SetWord(self, word):
+        coll = self.__class__.__db['coll']
+        item = coll.find_one({'word' : word})
+
+        if item:
+            raise WordExistsExcept
+
+        item = _wrap_word(word)
+        coll.insert_one(item)
+
+
     def GetWord(self, word):
         coll = self.__class__.__db['coll']
         item = coll.find_one({'word' : word})
         if not item:
-            new_item = _wrap_word(word)
-            coll.insert_one(new_item)
-            item = new_item
+            item = _wrap_word(word)
+            item['exist'] = False
+        else:
+            item['exist'] = True
 
+        item.pop('_id', None)
         from bson import json_util as jutil
         res = jutil.dumps(item)
 
@@ -68,16 +84,24 @@ _wordStore = WordStore()
 class WordHandler(tornado.web.RequestHandler):
     def get(self):
         word = self.request.path[1:].split('/')[0]
-
         res = _wordStore.GetWord(word)
         self.write(res)
+
+    def post(self):
+        word = self.request.path[1:].split('/')[0]
+        try:
+            _wordStore.SetWord(word)
+        except WordExistsExcept as e:
+            self.write('world exists except')
+
+        self.write('success')
 
 
 if __name__ == "__main__":
     app = tornado.web.Application([
         (r"/", MyHandler),
         (r"/[\w\s]+/json", WordHandler),
-    ])
+    ], debug=True)
 
     app.listen(8000)
     tornado.ioloop.IOLoop.instance().start()
