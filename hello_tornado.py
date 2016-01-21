@@ -44,31 +44,39 @@ class WordStore(object):
         coll = self.__class__.__db['coll']
         item = coll.find_one({'word' : word})
         if not item:
-            print "%s not found" %word
             new_item = _wrap_word(word)
             coll.insert_one(new_item)
             item = new_item
 
         from bson import json_util as jutil
         res = jutil.dumps(item)
+
+        '''
+            #from http://stackoverflow.com/questions/11094380/python-unicode-string-stored-as-u84b8-u6c7d-u5730-in-file-how-to-convert-it
+
+            s = '\u84b8\u6c7d\u5730'
+            print s.decode('unicode-escape')
+            # or
+            us = unicode(s, 'unicode-escape')
+            #--> 蒸汽地
+
+        '''
         return res.decode('unicode-escape')
 
 _wordStore = WordStore()
 
 class WordHandler(tornado.web.RequestHandler):
     def get(self):
-        word = self.request.path[1:]
-        # self.write(word)
-        # self.write("女孩")
+        word = self.request.path[1:].split('/')[0]
+
         res = _wordStore.GetWord(word)
-        print res
         self.write(res)
 
 
 if __name__ == "__main__":
     app = tornado.web.Application([
         (r"/", MyHandler),
-        (r"/[\w\s]+", WordHandler),
+        (r"/[\w\s]+/json", WordHandler),
     ])
 
     app.listen(8000)

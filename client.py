@@ -2,8 +2,27 @@
 #--coding:utf-8--
 
 import requests as req
+import json
+import sys
 
-r = req.get('http://localhost:8080/girl', auth=('user', 'pass'))
+def explain_word(word_json):
+    word_dict = json.loads(word_json)
+    word = word_dict['word']
+    explain = word_dict['explain']
+    print
+    print word
+    print '---------------------'
+    print '1. %s' %explain
 
-if (r.status_code == 200):
-    print r.text
+def main():
+    words = sys.argv[1:]
+
+    for word in words:
+        url ='http://localhost:8000/%s/json' %word
+        r = req.get(url, auth=('user', 'pass'))
+        if (r.status_code == 200):
+            explain_word(r.text)
+
+
+if __name__ == '__main__':
+    main()
