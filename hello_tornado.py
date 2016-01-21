@@ -21,7 +21,7 @@ class MyHandler(tornado.web.RequestHandler):
 def _wrap_word(word):
     dict = {
         'word' : word,
-        'explain' : 'test hello 测试'
+        'explain' : u'test hello 测试'
     }
 
     return dict
@@ -50,7 +50,8 @@ class WordStore(object):
             item = new_item
 
         from bson import json_util as jutil
-        return jutil.dumps(item)
+        res = jutil.dumps(item)
+        return res.decode('unicode-escape')
 
 _wordStore = WordStore()
 
