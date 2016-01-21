@@ -5,6 +5,11 @@ import tornado.ioloop
 import tornado.web
 import json
 
+from bson import json_util as jutil
+from pymongo import MongoClient
+
+import html_helper
+
 class MyHandler(tornado.web.RequestHandler):
     def get(self):
         # d = {
@@ -18,10 +23,36 @@ class MyHandler(tornado.web.RequestHandler):
         self.write("welcome to my tornado domain!\n")
         #self.write(j)
 
-def _wrap_word(word):
+class ThirdPartyWordDictSchema(object):
+    def GetWord(self):
+        raise NotImplementedError('Should have implemented this.')
+
+    def GetCollinsExplanation(self):
+        raise NotImplementedError('Should have implemented this.')
+
+    def GetSimpleChineseExplanation(self):
+        raise NotImplementedError('Should have implemented this.')
+
+class ICiBaSchema(ThirdPartyWordDictSchema):
+    def __init__(self, word):
+        url = 'http://www.iciba.com/' + word
+        self._html_content = html_helper.grab_html_content(url)
+        self._word = word
+
+    def GetWordItself(self):
+        return self._word
+
+    def GetCollinsExplanation(self):
+        return self._html_content
+
+    def GetSimpleChineseExplanation(self):
+        return None
+
+def _wrap_word(thirdSchema):
     dict = {
-        'word' : word,
-        'explain' : u'test hello 测试'
+        'word' : thirdSchema.GetWord(),
+        'collins_explain' : thirdSchema.GetCollinsExplanation(),
+        'simplechinese_explain' : thirdSchema.GetSimpleChineseExplanation()
     }
 
     return dict
@@ -30,41 +61,39 @@ class WordExistsExcept(Exception):
     pass
 
 class WordStore(object):
-    __db = None
+    _db = None
 
     @classmethod
     def init(cls, host = "youchun.li", port = 27017):
-        if not cls.__db:
-            from pymongo import MongoClient
+        if not cls._db:
             client = MongoClient(host, port)
-            cls.__db = client['wordstore-database']
-            coll = cls.__db['coll']
+            cls._db = client['wordstore-database']
+            coll = cls._db['coll']
 
     def __init__(self):
         WordStore.init()
 
     def SetWord(self, word):
-        coll = self.__class__.__db['coll']
+        coll = self.__class__._db['coll']
         item = coll.find_one({'word' : word})
 
         if item:
             raise WordExistsExcept
 
-        item = _wrap_word(word)
+        item = _wrap_word(ICiBaSchema(word))
         coll.insert_one(item)
 
 
     def GetWord(self, word):
-        coll = self.__class__.__db['coll']
+        coll = self.__class__._db['coll']
         item = coll.find_one({'word' : word})
         if not item:
-            item = _wrap_word(word)
+            item = _wrap_word(ICiBaSchema(word))
             item['exist'] = False
         else:
             item['exist'] = True
 
         item.pop('_id', None)
-        from bson import json_util as jutil
         res = jutil.dumps(item)
 
         '''
@@ -75,16 +104,14 @@ class WordStore(object):
             # or
             us = unicode(s, 'unicode-escape')
             #--> 蒸汽地
-
         '''
         return res.decode('unicode-escape')
 
-_wordStore = WordStore()
-
 class WordHandler(tornado.web.RequestHandler):
     def get(self):
+        WordStore = WordStore()
         word = self.request.path[1:].split('/')[0]
-        res = _wordStore.GetWord(word)
+        res = wordStore.GetWord(word)
         self.write(res)
 
     def post(self):

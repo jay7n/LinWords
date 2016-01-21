@@ -16,7 +16,7 @@ def explain_word(word_json, path):
     print '1. %s' %explain
 
     if not exist:
-        res = raw_input('this word hasn\'t been joined in the cache. joined it ? (y/n)')
+        res = raw_input('this word hasn\'t been joined in the cache. joined it ? (y/n) ')
         if res == 'y' or res == 'yes' or res == '':
             res = req.post(path, auth=('user', 'pass'))
             if res.status_code == 200:
@@ -28,6 +28,8 @@ def explain_word(word_json, path):
                     print 'error: unknown reason'
             else:
                 print 'error: status_code:' + str(res.status_code)
+        else:
+            print 'bye.'
 
 def main():
     word = sys.argv[1:]
