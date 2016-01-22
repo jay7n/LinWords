@@ -109,7 +109,7 @@ class WordStore(object):
 
 class WordHandler(tornado.web.RequestHandler):
     def get(self):
-        WordStore = WordStore()
+        wordStore = WordStore()
         word = self.request.path[1:].split('/')[0]
         res = wordStore.GetWord(word)
         self.write(res)
