@@ -4,16 +4,29 @@
 import requests as req
 import json
 import sys
+sys.path.insert(0, './schemes')
+from base_scheme import WordDictSchemeParser
+from iciba_collins import ICiBaSchemeUnitParser
+
+_word_dict_parser = WordDictSchemeParser(ICiBaSchemeUnitParser)
 
 def explain_word(word_json, path):
     word_dict = json.loads(word_json)
     word = word_dict['word']
-    explain = word_dict['explain']
     exist = word_dict['exist']
+    definitions = _word_dict_parser.ParseAllDefinitions(word_dict['definitions'])
+
     print
     print word
     print '---------------------'
-    print '1. %s' %explain
+    for idx, defi in enumerate(definitions):
+        print ''.join([str(idx), '. ', defi.GetWordClass()])
+        print ''.join([defi.GetEnglishDefi(), '  ', defi.GetChineseDefi()])
+
+        for key, value in defi.GetExamples().iteritems():
+            print '\t' + key
+            print '\t' + value
+        print
 
     if not exist:
         res = raw_input('this word hasn\'t been joined in the cache. joined it ? (y/n) ')

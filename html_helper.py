@@ -1,3 +1,7 @@
+import random
+import urllib2
+
+_REQUEST_COUNT = 5
 
 def grab_html_content(url):
 	if not url :
@@ -5,7 +9,7 @@ def grab_html_content(url):
 
 	request_counter = [ 0 ]
 	def request_content(user_agent = 'Chrome'):
-		if request_counter[0] > REQUEST_COUNT:
+		if request_counter[0] > _REQUEST_COUNT:
 			return None
 
 		request_counter[0] += 1
