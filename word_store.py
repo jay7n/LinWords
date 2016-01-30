@@ -4,19 +4,17 @@
 from bson import json_util as jutil
 from pymongo import MongoClient
 
-import sys
-
-class WordExistsExcept(Exception):
-    pass
-
 class WordStoreInterface(object):
-    def AddWord(self, word_str):
+    def AddWord(self, word, scheme_signature):
         raise NotImplementedError('Should have implemented this.')
 
-    def GetWord(self, word_str):
+    def GetWord(self, word_str, scheme_signature):
         raise NotImplementedError('Should have implemented this.')
 
-    def RemoveWord(self, word_str):
+    def HasWord(self, word_str, scheme_signature):
+        raise NotImplementedError('Should have implemented this.')
+
+    def RemoveWord(self, word_str, scheme_signature):
         raise NotImplementedError('Should have implemented this.')
 
 class MongoWordStore(WordStoreInterface):
@@ -29,13 +27,25 @@ class MongoWordStore(WordStoreInterface):
     def __init__(self):
         self._initdb()
 
-    def AddWord(self, word):
+    def AddWord(self, word, scheme_signature):
         assert type(word['word']) == str, u'key [\'word\'] for word object %s doesn\'t match type str' %str(word)
+        if self.GetWord(word['word'], scheme_signature):
+            raise RuntimeError, 'word already exists.'
+
+        word['exist_in_db'] = True
         self._dbstore.insert_one(word)
 
-    def GetWord(self, word_liter):
-        word = self._dbstore.find_one({'word' : word_liter})
+    def GetWord(self, word_str, scheme_signature):
+        word = self._dbstore.find_one(
+            {'word'   : word_liter,
+             'scheme' : scheme_signature})
+
+        if word:
+            word.pop('_id', None)
         return word
 
-    def RemoveWord(self, word_str):
-        pass #todo
+    def HasWord(self, word_str, scheme_signature):
+        pass # TODO
+
+    def RemoveWord(self, word_str, scheme_signature):
+        pass #Todo

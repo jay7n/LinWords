@@ -8,9 +8,13 @@ from base_scheme import BaseWordDictScheme
 from base_scheme import BaseWordDictSchemeUnitParser
 
 class ICiBaScheme(BaseWordDictScheme):
+    @classmethod
+    def GetSignature(cls):
+        return "ICiBaScheme_Collins"
+
     def _parseCollinsSectionPrep(self, section_prep):
         sp = section_prep
-        
+
         # We didn't handle 'Suggestions' for now
         if sp.find(class_='suggest'):
             return None

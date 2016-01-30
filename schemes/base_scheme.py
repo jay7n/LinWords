@@ -2,6 +2,9 @@
 #--coding:utf-8--
 
 class BaseWordDictScheme(object):
+    def GetSignature(self):
+        raise NotImplementedError('Should have implemented this.')
+
     def GetWord(self):
         raise NotImplementedError('Should have implemented this.')
 
