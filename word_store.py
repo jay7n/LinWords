@@ -1,9 +1,6 @@
 #!/usr/bin/python
 #--coding:utf-8--
 
-from bson import json_util as jutil
-from pymongo import MongoClient
-
 class WordStoreInterface(object):
     def AddWord(self, word, scheme_signature):
         raise NotImplementedError('Should have implemented this.')
@@ -17,12 +14,12 @@ class WordStoreInterface(object):
     def RemoveWord(self, word_str, scheme_signature):
         raise NotImplementedError('Should have implemented this.')
 
+from pymongo import MongoClient
 class MongoWordStore(WordStoreInterface):
-    def _initdb(self host = 'youchun.li', port = 27017, db_name = 'liwords-db', collection = 'store'):
-        if not self._db:
-            db_client = MongoClient(host, port)
-            self._db = db_client[db_name]
-            self._dbstore = self._db[collection]
+    def _initdb(self, host = 'youchun.li', port = 27017, db_name = 'liwords-db', collection = 'store'):
+        db_client = MongoClient(host, port)
+        self._db = db_client[db_name]
+        self._dbstore = self._db[collection]
 
     def __init__(self):
         self._initdb()
@@ -33,11 +30,12 @@ class MongoWordStore(WordStoreInterface):
             raise RuntimeError, 'word already exists.'
 
         word['exist_in_db'] = True
+        print word
         self._dbstore.insert_one(word)
 
     def GetWord(self, word_str, scheme_signature):
         word = self._dbstore.find_one(
-            {'word'   : word_liter,
+            {'word'   : word_str,
              'scheme' : scheme_signature})
 
         if word:

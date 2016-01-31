@@ -13,6 +13,7 @@ _word_dict_parser = WordDictSchemeParser(ICiBaSchemeUnitParser)
 def explain_word_and_ask(session_json, path):
     session_dict = json.loads(session_json)
     session_id = session_dict['id']
+    print session_id
     word_dict = session_dict['word']
 
     word = word_dict['word']
@@ -31,14 +32,16 @@ def explain_word_and_ask(session_json, path):
             print '\t' + value
         print
 
+    # if False:
     if not exist:
         res = raw_input('this word hasn\'t been joined in the cache. joined it ? (y/n) ')
-        answer = {
-        'session_id' : session_id,
-        'cache_word' : 'undefined'}
+        print "fuck!"
+
+        answer = {'session_id' : session_id, 'cache_word' : 'undefined'}
 
         if res == 'y' or res == 'yes' or res == '':
             answer['cache_word'] = 'yes'
+            print "req.post!"
             res = req.post(path, auth=('user', 'pass'), data = answer)
 
             if res.status_code == 200:
@@ -52,7 +55,9 @@ def explain_word_and_ask(session_json, path):
                 print 'error: status_code:' + str(res.status_code)
         else:
             answer['cache_word'] = 'nope'
+            print "req.post2!"
             res = req.post(path, auth=('user', 'pass'), data = answer)
+            print res.text
             print 'bye.'
 
 def main():
