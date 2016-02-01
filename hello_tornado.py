@@ -33,9 +33,7 @@ class PendingSessionQueue(object):
             'timestamp' : time.time()})
 
     def has_session(self, session_id):
-        print "has_session.session_id= " + session_id
         for s in self.queue:
-            print 's.session_d= ' + s['session_id']
             if s['session_id'] == session_id:
                 return True
 
@@ -140,8 +138,8 @@ class WordHandler(tornado.web.RequestHandler):
                 except RuntimeError as e:
                     self.write(str(e))
             else:
-                print "yo're deny to add this word. got it"
-                self.write("yo're deny to add this word. got it")
+                print "you deny to add this word. got it"
+                self.write("you deny to add this word. got it")
                 pass # TODO
         else:
             print "now session found"

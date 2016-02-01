@@ -27,9 +27,13 @@ def explain_word_and_ask(session_json, path):
         print ''.join([str(idx), '. ', defi.GetWordClass()])
         print ''.join([defi.GetEnglishDefi(), '  ', defi.GetChineseDefi()])
 
-        for key, value in defi.GetExamples().iteritems():
-            print '\t' + key
-            print '\t' + value
+        for elm in defi.GetExamples():
+            print '\t' + elm['en_eg']
+            print '\t' + elm['cn_eg']
+
+        # for key, value in defi.GetExamples().iteritems():
+        #     print '\t' + key
+        #     print '\t' + value
         print
 
     # if False:
@@ -45,12 +49,13 @@ def explain_word_and_ask(session_json, path):
             res = req.post(path, auth=('user', 'pass'), data = answer)
 
             if res.status_code == 200:
-                if res.text == 'success':
-                    print 'done.'
-                elif res.text == 'world exists except':
-                    print 'error: ' + res.text
-                else:
-                    print 'error: unknown reason'
+                print res.text
+                # if res.text == 'success':
+                #     print 'done.'
+                # elif res.text == 'world exists except':
+                #     print 'error: ' + res.text
+                # else:
+                #     print 'error: unknown reason'
             else:
                 print 'error: status_code:' + str(res.status_code)
         else:

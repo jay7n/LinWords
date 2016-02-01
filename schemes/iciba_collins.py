@@ -23,13 +23,14 @@ class ICiBaScheme(BaseWordDictScheme):
         res['word class'] = sp.find(class_='family-english').text
         res['english defi'] = sp.find(class_='family-english size-english prep-en').text
         res['chinese defi'] = sp.find(class_='family-chinese').text
-        res_examples = {}
+        res_examples = []
 
         example_sentences = sp.find(class_='text-sentence').find_all(class_='sentence-item')
         for example in example_sentences:
-            key = example.find(class_='family-english').text
-            value = example.find(class_='family-chinese').text
-            res_examples[key] = value
+            en_eg = example.find(class_='family-english').text
+            cn_eg = example.find(class_='family-chinese').text
+
+            res_examples.append({'en_eg' : en_eg, 'cn_eg' : cn_eg})
 
         res['examples'] = res_examples
         return res
@@ -69,9 +70,9 @@ class ICiBaSchemeUnitParser(BaseWordDictSchemeUnitParser):
         wc = defi['word class']
         ed = defi['english defi']
         cd = defi['chinese defi']
-        ex = defi['examples']
+        eg = defi['examples']
 
-        return cls(wc, ed, cd, ex)
+        return cls(wc, ed, cd, eg)
 
     def __init__(self, word_class, english_defi, chinese_defi, examples):
         self.word_class = word_class

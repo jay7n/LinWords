@@ -30,7 +30,6 @@ class MongoWordStore(WordStoreInterface):
             raise RuntimeError, 'word already exists.'
 
         word['exist_in_db'] = True
-        print word
         self._dbstore.insert_one(word)
 
     def GetWord(self, word_str, scheme_signature):
