@@ -9,7 +9,7 @@ from base_scheme import BaseWordDictSchemeUnitParser
 
 class ICiBaScheme(BaseWordDictScheme):
     @classmethod
-    def GetSignature(cls):
+    def GetDictName(cls):
         return "ICiBaScheme_Collins"
 
     def _parseCollinsSectionPrep(self, section_prep):

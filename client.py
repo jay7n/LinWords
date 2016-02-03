@@ -39,7 +39,6 @@ def explain_word_and_ask(session_json, path):
     # if False:
     if not exist:
         res = raw_input('this word hasn\'t been joined in the cache. joined it ? (y/n) ')
-        print "fuck!"
 
         answer = {'session_id' : session_id, 'cache_word' : 'undefined'}
 
