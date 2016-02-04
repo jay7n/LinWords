@@ -4,16 +4,20 @@
 import requests as req
 import json
 import sys
+import logging
+
 sys.path.insert(0, './schemes')
 from base_scheme import WordDictSchemeParser
 from iciba_collins import ICiBaSchemeUnitParser
+
+logging.basicConfig(level = logging.DEBUG)
 
 _word_dict_parser = WordDictSchemeParser(ICiBaSchemeUnitParser)
 
 def explain_word_and_ask(session_json, path):
     session_dict = json.loads(session_json)
     session_id = session_dict['id']
-    print session_id
+    logging.debug(session_id)
     word_dict = session_dict['word']
 
     word = word_dict['word']
@@ -31,38 +35,25 @@ def explain_word_and_ask(session_json, path):
             print '\t' + elm['en_eg']
             print '\t' + elm['cn_eg']
 
-        # for key, value in defi.GetExamples().iteritems():
-        #     print '\t' + key
-        #     print '\t' + value
         print
 
-    # if False:
     if not exist:
         res = raw_input('this word hasn\'t been joined in the cache. joined it ? (y/n) ')
 
-        answer = {'session_id' : session_id, 'cache_word' : 'undefined'}
+        answer = {'session_id' : session_id, 'word' : word, 'cache_it' : 'undefined'}
 
         if res == 'y' or res == 'yes' or res == '':
-            answer['cache_word'] = 'yes'
-            print "req.post!"
+            answer['cache_it'] = 'yes'
             res = req.post(path, auth=('user', 'pass'), data = answer)
 
             if res.status_code == 200:
                 print res.text
-                # if res.text == 'success':
-                #     print 'done.'
-                # elif res.text == 'world exists except':
-                #     print 'error: ' + res.text
-                # else:
-                #     print 'error: unknown reason'
             else:
                 print 'error: status_code:' + str(res.status_code)
         else:
-            answer['cache_word'] = 'nope'
-            print "req.post2!"
+            answer['cache_it'] = 'nope'
             res = req.post(path, auth=('user', 'pass'), data = answer)
             print res.text
-            print 'bye.'
 
 def main():
     word = sys.argv[1:]

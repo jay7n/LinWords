@@ -16,10 +16,6 @@ class WordStoreInterface(object):
 
 from pymongo import MongoClient
 class MongoWordStore(WordStoreInterface):
-    # def _initdb(self, host = 'youchun.li', port = 27017, db_name = 'liwords-db', collection = 'store'):
-    #     db_client = MongoClient(host, port)
-    #     self._db = db_client[db_name]
-
     def __init__(self, dict_store_name):
         self._dict_store_name = dict_store_name
 

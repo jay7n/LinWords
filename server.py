@@ -10,27 +10,21 @@ import tornado.gen
 import time
 import uuid
 import json
+import logging
 
 from iciba_collins import ICiBaScheme
 from word_store import MongoWordStore
 from bson import json_util as jutil
 
-def dprint(str):
-    if __debug__:
-        print str
+logging.basicConfig(level = logging.DEBUG)
 
 class PendingSessionQueue(object):
     def __init__(self):
         self.queue = []
 
-    # def append(self, session_id, answer):
-    #     self.queue.append({
-    #         'session_id' : session_id,
-    #         # 'answer' : answer,
-    #         'timestamp' : time.time()})
     def append(self, session_id, word):
-        print "word " + word['word'] + " added"
-        print "append.session_id= " + session_id
+        logging.debug('word "'  + word['word'] + '" added into pending sessions and waiting for response... ')
+
         self.queue.append({
             'session_id' : session_id,
             'word' : word,
@@ -44,7 +38,8 @@ class PendingSessionQueue(object):
         return False
 
     def remove_session(self, session_id):
-        print 'remove_session'
+        logging.debug('remove_session')
+
         for s in self.queue:
             if s['session_id'] == session_id:
                 self.queue.remove(s)
@@ -57,23 +52,16 @@ class PendingSessionQueue(object):
             if s['session_id'] == session_id:
                 return s['word']
 
-    # def get_answer(self, session_id):
-    #     for elm in self.queue:
-    #         if elm['session_id'] == session_id:
-    #             return elm['answer']
-    #
-    #     return None
-
-    # def set_answer(self, session_id, answer):
-    #     for elm in self.queue:
-    #         if elm['session_id'] == session_id:
-    #             elm['answer'] = answer
-
     def remove_timeout_session(self, lifetime):
-        dprint('remove_timeout_session')
-        # if (len(self.queue) > 0):
-        #     new_queue = [s for s in self.queue if time.time() - s['timestamp'] < lifetime]
-        #     self.queue = new_queue
+        logging.debug('remove_timeout_session')
+        if (len(self.queue) > 0):
+            new_queue = [s for s in self.queue if time.time() - s['timestamp'] < lifetime]
+
+            excluded = [s for s in self.queue if s not in new_queue]
+            for excl in excluded:
+                logging.debug('word "' + excl['word']['word'] + '" has been removed from pending sessions')
+
+            self.queue = new_queue
 
 class WordHandler(tornado.web.RequestHandler):
     _pending_session_queue = PendingSessionQueue()
@@ -86,15 +74,14 @@ class WordHandler(tornado.web.RequestHandler):
         self._config = {'PendingSesionLifetime'       : 60,          # maximum time to wait for POST response in seconds
                         'ScanPendingSessionInternval' : 30 }         # interval time to check if POST response is comming in seconds
 
-
-        dprint("WordHandler init")
+        logging.debug('WordHandler init')
         scan_interval = self._config['ScanPendingSessionInternval']
         tornado.ioloop.PeriodicCallback(self._polling, scan_interval*1000).start()
 
     def _polling(self):
+        logging.debug('polling!')
         pending_session_life_time = self._config['PendingSesionLifetime']
         self._pending_session_queue.remove_timeout_session(pending_session_life_time)
-        dprint("polling!")
 
     def _wrap_word(self, third_scheme):
         wword = {
@@ -105,7 +92,7 @@ class WordHandler(tornado.web.RequestHandler):
         return wword
 
     def get(self):
-        dprint("tornado.get!")
+        logging.debug('tornado.get!')
         session = {'id' : str(uuid.uuid4()), 'word' : None}
 
         word_str = self.request.path[1:].split('/')[0]
@@ -130,29 +117,33 @@ class WordHandler(tornado.web.RequestHandler):
         self.write(res.decode('unicode-escape'))
 
     def post(self):
-        dprint("tornado.post!")
-        cache_word = self.get_argument('cache_word')
-        session_id = self.get_argument('session_id')
-        if self._pending_session_queue.has_session(session_id):
-            word = self._pending_session_queue.get_word(session_id)
-            if cache_word == 'yes':
+        msg = ''
+        word_literal = self.get_argument('word')
+
+        if self.get_argument('cache_it') == 'yes':
+            session_id = self.get_argument('session_id')
+            if self._pending_session_queue.has_session(session_id):
+                word = self._pending_session_queue.get_word(session_id)
+                assert word['word'] == word_literal
                 try:
                     self._wordStore.AddWord(word)
-                    self.write(word['word'] + ": added successfully")
+                    msg = 'the word "' + word_literal + '" has been cached.'
                 except RuntimeError as e:
-                    self.write(str(e))
+                    msg = str(e)
             else:
-                print "you deny to add this word. got it"
-                self.write("you deny to add this word. got it")
-                pass # TODO
+                logging.debug('session "' + session_id + '" does not exsit. maybe removed due to session timeout ?')
+                msg = 'faied to add word "' + word_literal + '". probably timeout.'
         else:
-            print "no session found"
-            pass #TODO
+            msg = 'you deny to cache the word "' + word_literal + '".'
+
+        msg_type = type(msg)
+        assert msg_type == str or msg_type == unicode, 'error: msg is not a str/unicode type!'
+
+        self.write(msg)
 
 class IndexHandler(tornado.web.RequestHandler):
     def get(self):
         self.write("welcome to my tornado domain!\n")
-        #self.write(j)
 
 if __name__ == "__main__":
     app = tornado.web.Application([
