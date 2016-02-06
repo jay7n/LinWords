@@ -53,15 +53,24 @@ class ICiBaScheme(BaseWordDictScheme):
 
     def __init__(self, word):
         url = 'http://www.iciba.com/' + word
-        html_content = html_helper.grab_html_content(url)
-        self.definitions = self._parseHtmlContent(html_content)
-        self.word = word
+        try:
+            html_content = html_helper.grab_html_content(url)
+            self.definitions = self._parseHtmlContent(html_content)
+            self.word = word
+            self.valid = True
+        except Exception:
+            self.valid = False
+            self.word = None
+            self.definitions = None
 
     def GetWord(self):
         return self.word
 
     def GetDefinitions(self):
         return self.definitions
+
+    def IsValid(self):
+        return self.valid
 
 
 class ICiBaSchemeUnitParser(BaseWordDictSchemeUnitParser):
