@@ -24,7 +24,7 @@ def grab_html_content(url):
 
 	con = request_content()
 
-	if con.code != 200:
+	if not con or con.code != 200:
 		raise Exception("http code returns abnormally")
 
 	return con.read()

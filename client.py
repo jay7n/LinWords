@@ -63,6 +63,8 @@ def main():
     res = req.get(path, auth=('user', 'pass'))
     if (res.status_code == 200):
         explain_word_and_ask(res.text, path)
+    else:
+        print res.text
 
 
 if __name__ == '__main__':

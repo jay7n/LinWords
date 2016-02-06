@@ -12,6 +12,9 @@ class BaseWordDictScheme(object):
     def GetDefinitions(self):
         raise NotImplementedError('Should have implemented this.')
 
+    def IsValid(self):
+        raise NotImplementedError('Should have implemented this.')
+
 class BaseWordDictSchemeUnitParser(object):
     @classmethod
     def Parse(cls, defi):

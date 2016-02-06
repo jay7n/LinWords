@@ -53,7 +53,6 @@ class PendingSessionQueue(object):
                 return s['word']
 
     def remove_timeout_session(self, lifetime):
-        logging.debug('remove_timeout_session')
         if (len(self.queue) > 0):
             new_queue = [s for s in self.queue if time.time() - s['timestamp'] < lifetime]
 
@@ -66,7 +65,8 @@ class PendingSessionQueue(object):
 class WordHandler(tornado.web.RequestHandler):
     _pending_session_queue = PendingSessionQueue()
     _wordStore = MongoWordStore(ICiBaScheme.GetDictName())
-    _wordStore.Connect(host = 'youchun.li', port = 27017, db_name = 'liwords-db')
+    # _wordStore.Connect(host = 'youchun.li', port = 27017, db_name = 'liwords-db')
+    _wordStore.Connect(host = 'localhost', port = 27017, db_name = 'liwords-db')
 
     def __init__(self, application, request, **kwargs):
         super(WordHandler, self).__init__(application, request, **kwargs)
@@ -84,12 +84,15 @@ class WordHandler(tornado.web.RequestHandler):
         self._pending_session_queue.remove_timeout_session(pending_session_life_time)
 
     def _wrap_word(self, third_scheme):
-        wword = {
-            'word' : third_scheme.GetWord(),
-            'definitions' : third_scheme.GetDefinitions(),
-            'exist_in_db' : False
-        }
-        return wword
+        if third_scheme.IsValid():
+            wword = {
+                'word' : third_scheme.GetWord(),
+                'definitions' : third_scheme.GetDefinitions(),
+                'exist_in_db' : False
+            }
+            return wword
+
+        return None
 
     def get(self):
         logging.debug('tornado.get!')
@@ -100,10 +103,16 @@ class WordHandler(tornado.web.RequestHandler):
 
         if not word:
             word = self._wrap_word(ICiBaScheme(word_str))
-            self._pending_session_queue.append(session['id'], word)
+            if word != None:
+                self._pending_session_queue.append(session['id'], word)
+
+        if word == None:
+            logging.warning('faied to get word' + word_str)
+            self.set_status(404)
+            self.write('failed to find word \"' + word_str + '\" in any ways.')
+            return
 
         session['word'] = word
-
         res = jutil.dumps(session)
 
         '''
