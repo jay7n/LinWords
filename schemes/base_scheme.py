@@ -1,7 +1,9 @@
 #!/usr/bin/python
-#--coding:utf-8--
+# --coding:utf-8--
+
 
 class BaseWordDictScheme(object):
+
     @classmethod
     def GetDictName(cls):
         raise NotImplementedError('Should have implemented this.')
@@ -15,7 +17,9 @@ class BaseWordDictScheme(object):
     def IsValid(self):
         raise NotImplementedError('Should have implemented this.')
 
+
 class BaseWordDictSchemeUnitParser(object):
+
     @classmethod
     def Parse(cls, defi):
         raise NotImplementedError('Should have implemented this.')
@@ -32,7 +36,9 @@ class BaseWordDictSchemeUnitParser(object):
     def GetExamples(self):
         raise NotImplementedError('Should have implemented this.')
 
+
 class WordDictSchemeParser(object):
+
     def __init__(self, unit_parser_cls):
         self.unit_parser_cls = unit_parser_cls
 

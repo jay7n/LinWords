@@ -1,18 +1,19 @@
 #!/usr/bin/python
-#--coding:utf-8--
+# --coding:utf-8--
+
+import sys
 
 import requests
 import json
-import sys
 import logging
 
-sys.path.insert(0, './schemes')
-from base_scheme import WordDictSchemeParser
-from iciba_collins import ICiBaSchemeUnitParser
+import schemes.base_scheme as base_scheme
+import schemes.iciba_collins as iciba_collins
 
-logging.basicConfig(level = logging.DEBUG)
+logging.basicConfig(level=logging.DEBUG)
 
-_word_dict_parser = WordDictSchemeParser(ICiBaSchemeUnitParser)
+_word_dict_parser = base_scheme.WordDictSchemeParser(iciba_collins.ICiBaSchemeUnitParser)
+
 
 def explain_word_and_ask(session_json, path):
     session_dict = json.loads(session_json)
@@ -40,11 +41,11 @@ def explain_word_and_ask(session_json, path):
     if not exist:
         res = raw_input('this word hasn\'t been joined in the cache. joined it ? (y/n) ')
 
-        answer = {'session_id' : session_id, 'word' : word, 'cache_it' : 'undefined'}
+        answer = {'session_id': session_id, 'word': word, 'cache_it': 'undefined'}
 
         if res == 'y' or res == 'yes' or res == '':
             answer['cache_it'] = 'yes'
-            res = requests.post(path, auth=('user', 'pass'), data = answer)
+            res = requests.post(path, auth=('user', 'pass'), data=answer)
 
             if res.status_code == 200:
                 print res.text
@@ -52,14 +53,15 @@ def explain_word_and_ask(session_json, path):
                 print 'error: status_code:' + str(res.status_code)
         else:
             answer['cache_it'] = 'nope'
-            res = requests.post(path, auth=('user', 'pass'), data = answer)
+            res = requests.post(path, auth=('user', 'pass'), data=answer)
             print res.text
+
 
 def main():
     word = sys.argv[1:]
     word = ' '.join(word)
 
-    path ='http://localhost:8000/%s/json' %word
+    path = 'http://localhost:8000/%s/json' % word
     try:
         res = requests.get(path, auth=('user', 'pass'))
         if res:
