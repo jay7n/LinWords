@@ -1,13 +1,15 @@
 #!/usr/bin/python
-#--coding:utf-8--
+# --coding:utf-8--
 
-import html_helper
+import logging
+import bs4
 
-from bs4 import BeautifulSoup
-from base_scheme import BaseWordDictScheme
-from base_scheme import BaseWordDictSchemeUnitParser
+import schemes.base_scheme as base_scheme
+import utils.html_helper as html_helper
 
-class ICiBaScheme(BaseWordDictScheme):
+
+class ICiBaScheme(base_scheme.BaseWordDictScheme):
+
     @classmethod
     def GetDictName(cls):
         return "ICiBaScheme_Collins"
@@ -30,7 +32,7 @@ class ICiBaScheme(BaseWordDictScheme):
             en_eg = example.find(class_='family-english').text
             cn_eg = example.find(class_='family-chinese').text
 
-            res_examples.append({'en_eg' : en_eg, 'cn_eg' : cn_eg})
+            res_examples.append({'en_eg': en_eg, 'cn_eg': cn_eg})
 
         res['examples'] = res_examples
         return res
@@ -39,9 +41,11 @@ class ICiBaScheme(BaseWordDictScheme):
         if not html_content:
             return
 
-        soup = BeautifulSoup(html_content, "html.parser")
-        collins_tag = soup.find(name='li', text=u'柯林斯高阶英汉双解学习词典').parent.next_sibling.next_sibling
-        collins_section_preps = collins_tag.find(class_='collins-section').find_all(class_='section-prep')
+        soup = bs4.BeautifulSoup(html_content, "html.parser")
+        collins_tag = soup.find(name='li', text=u'柯林斯高阶英汉双解学习词典')
+        collins_tag = collins_tag.parent.next_sibling.next_sibling
+        collins_section_preps = collins_tag.find(
+            class_='collins-section').find_all(class_='section-prep')
 
         definitions = []
         for section_prep in collins_section_preps:
@@ -53,15 +57,15 @@ class ICiBaScheme(BaseWordDictScheme):
 
     def __init__(self, word):
         url = 'http://www.iciba.com/' + word
-        try:
-            html_content = html_helper.grab_html_content(url)
-            self.definitions = self._parseHtmlContent(html_content)
-            self.word = word
-            self.valid = True
-        except Exception:
-            self.valid = False
-            self.word = None
-            self.definitions = None
+        # try:
+        html_content = html_helper.grab_html_content(url)
+        self.definitions = self._parseHtmlContent(html_content)
+        self.word = word
+        self.valid = True
+        # except Exception:
+        # self.valid = False
+        # self.word = None
+        # self.definitions = None
 
     def GetWord(self):
         return self.word
@@ -73,7 +77,8 @@ class ICiBaScheme(BaseWordDictScheme):
         return self.valid
 
 
-class ICiBaSchemeUnitParser(BaseWordDictSchemeUnitParser):
+class ICiBaSchemeUnitParser(base_scheme.BaseWordDictSchemeUnitParser):
+
     @classmethod
     def Parse(cls, defi):
         wc = defi['word class']

@@ -1,34 +1,36 @@
 #!/usr/bin/python
-#--coding:utf-8--
+# --coding:utf-8--
 
 import sys
-sys.path.insert(0, './schemes')
-
-import tornado.ioloop
-import tornado.web
-import tornado.gen
 import time
 import uuid
 import json
 import logging
 
-from iciba_collins import ICiBaScheme
-from word_store import MongoWordStore
+import tornado.ioloop
+import tornado.web
+import tornado.gen
 from bson import json_util as jutil
 
-logging.basicConfig(level = logging.DEBUG)
+import schemes.iciba_collins as scheme
+import wordstores.mongo_wordstore as wordstore
+
+logging.basicConfig(level=logging.DEBUG)
+
 
 class PendingSessionQueue(object):
+
     def __init__(self):
         self.queue = []
 
     def append(self, session_id, word):
-        logging.debug('word "'  + word['word'] + '" added into pending sessions and waiting for response... ')
+        logging.debug('word "' + word['word'] +
+                      '" added into pending sessions and waiting for response... ')
 
         self.queue.append({
-            'session_id' : session_id,
-            'word' : word,
-            'timestamp' : time.time()})
+            'session_id': session_id,
+            'word': word,
+            'timestamp': time.time()})
 
     def has_session(self, session_id):
         for s in self.queue:
@@ -58,25 +60,27 @@ class PendingSessionQueue(object):
 
             excluded = [s for s in self.queue if s not in new_queue]
             for excl in excluded:
-                logging.debug('word "' + excl['word']['word'] + '" has been removed from pending sessions')
+                logging.debug('word "' + excl['word']['word'] +
+                              '" has been removed from pending sessions')
 
             self.queue = new_queue
 
+
 class WordHandler(tornado.web.RequestHandler):
     _pending_session_queue = PendingSessionQueue()
-    _wordStore = MongoWordStore(ICiBaScheme.GetDictName())
+    _wordStore = wordstore.MongoWordStore(scheme.ICiBaScheme.GetDictName())
     # _wordStore.Connect(host = 'youchun.li', port = 27017, db_name = 'liwords-db')
-    _wordStore.Connect(host = 'localhost', port = 27017, db_name = 'liwords-db')
+    _wordStore.Connect(host='localhost', port=27017, db_name='liwords-db')
 
     def __init__(self, application, request, **kwargs):
         super(WordHandler, self).__init__(application, request, **kwargs)
 
-        self._config = {'PendingSesionLifetime'       : 60,          # maximum time to wait for POST response in seconds
-                        'ScanPendingSessionInternval' : 30 }         # interval time to check if POST response is comming in seconds
+        self._config = {'PendingSesionLifetime': 60,          # maximum time to wait for POST response in seconds
+                        'ScanPendingSessionInternval': 30}         # interval time to check if POST response is comming in seconds
 
         logging.debug('WordHandler init')
         scan_interval = self._config['ScanPendingSessionInternval']
-        tornado.ioloop.PeriodicCallback(self._polling, scan_interval*1000).start()
+        tornado.ioloop.PeriodicCallback(self._polling, scan_interval * 1000).start()
 
     def _polling(self):
         logging.debug('polling!')
@@ -86,9 +90,9 @@ class WordHandler(tornado.web.RequestHandler):
     def _wrap_word(self, third_scheme):
         if third_scheme.IsValid():
             wword = {
-                'word' : third_scheme.GetWord(),
-                'definitions' : third_scheme.GetDefinitions(),
-                'exist_in_db' : False
+                'word': third_scheme.GetWord(),
+                'definitions': third_scheme.GetDefinitions(),
+                'exist_in_db': False
             }
             return wword
 
@@ -96,20 +100,22 @@ class WordHandler(tornado.web.RequestHandler):
 
     def get(self):
         logging.debug('tornado.get!')
-        session = {'id' : str(uuid.uuid4()), 'word' : None}
+        session = {'id': str(uuid.uuid4()), 'word': None}
 
-        word_str = self.request.path[1:].split('/')[0]
-        word = self._wordStore.GetWord(word_str)
+        word_literal = self.request.path[1:].split('/')[0]
+        word = self._wordStore.GetWord(word_literal)
 
         if not word:
-            word = self._wrap_word(ICiBaScheme(word_str))
-            if word != None:
+            word = self._wrap_word(scheme.ICiBaScheme(word_literal))
+            if word is not None:
                 self._pending_session_queue.append(session['id'], word)
 
-        if word == None:
-            logging.warning('faied to get word ' + word_str)
+        if word is None:
+            msg = 'failed to find word \"' + word_literal + '\"'
+            logging.warning(msg)
+
             self.set_status(404)
-            self.write('failed to find word \"' + word_str + '\" in any ways.')
+            self.write(msg)
             return
 
         session['word'] = word
@@ -140,17 +146,20 @@ class WordHandler(tornado.web.RequestHandler):
                 except RuntimeError as e:
                     msg = str(e)
             else:
-                logging.debug('session "' + session_id + '" does not exsit. maybe removed due to session timeout ?')
+                logging.debug('session "' + session_id +
+                              '" does not exsit. maybe removed due to session timeout ?')
                 msg = 'faied to add word "' + word_literal + '". probably timeout.'
         else:
-            msg = 'you deny to cache the word "' + word_literal + '".'
+            msg = 'you deny to cache the word "' + word_literal + '". \nbye.'
 
         msg_type = type(msg)
         assert msg_type == str or msg_type == unicode, 'error: msg is not a str/unicode type!'
 
         self.write(msg)
 
+
 class IndexHandler(tornado.web.RequestHandler):
+
     def get(self):
         self.write("welcome to my tornado domain!\n")
 
