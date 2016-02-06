@@ -107,7 +107,7 @@ class WordHandler(tornado.web.RequestHandler):
                 self._pending_session_queue.append(session['id'], word)
 
         if word == None:
-            logging.warning('faied to get word' + word_str)
+            logging.warning('faied to get word ' + word_str)
             self.set_status(404)
             self.write('failed to find word \"' + word_str + '\" in any ways.')
             return

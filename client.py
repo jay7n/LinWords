@@ -1,7 +1,7 @@
 #!/usr/bin/python
 #--coding:utf-8--
 
-import requests as req
+import requests
 import json
 import sys
 import logging
@@ -44,7 +44,7 @@ def explain_word_and_ask(session_json, path):
 
         if res == 'y' or res == 'yes' or res == '':
             answer['cache_it'] = 'yes'
-            res = req.post(path, auth=('user', 'pass'), data = answer)
+            res = requests.post(path, auth=('user', 'pass'), data = answer)
 
             if res.status_code == 200:
                 print res.text
@@ -52,7 +52,7 @@ def explain_word_and_ask(session_json, path):
                 print 'error: status_code:' + str(res.status_code)
         else:
             answer['cache_it'] = 'nope'
-            res = req.post(path, auth=('user', 'pass'), data = answer)
+            res = requests.post(path, auth=('user', 'pass'), data = answer)
             print res.text
 
 def main():
@@ -60,11 +60,15 @@ def main():
     word = ' '.join(word)
 
     path ='http://localhost:8000/%s/json' %word
-    res = req.get(path, auth=('user', 'pass'))
-    if (res.status_code == 200):
-        explain_word_and_ask(res.text, path)
-    else:
-        print res.text
+    try:
+        res = requests.get(path, auth=('user', 'pass'))
+        if res:
+            if (res.status_code == 200):
+                explain_word_and_ask(res.text, path)
+            else:
+                print res.text
+    except requests.exceptions.ConnectionError:
+        print 'failed to connect to path \"' + path + '\"'
 
 
 if __name__ == '__main__':
