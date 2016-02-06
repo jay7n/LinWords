@@ -14,7 +14,9 @@ class WordStoreInterface(object):
     def RemoveWord(self, word_str):
         raise NotImplementedError('Should have implemented this.')
 
+import logging
 from pymongo import MongoClient
+
 class MongoWordStore(WordStoreInterface):
     def __init__(self, dict_store_name):
         self._dict_store_name = dict_store_name
@@ -34,11 +36,14 @@ class MongoWordStore(WordStoreInterface):
         self._dbstore.insert_one(word)
 
     def GetWord(self, word_str):
-        word = self._dbstore.find_one({'word'   : word_str })
-        if word:
-            word.pop('_id', None)
-
-        return word
+        try:
+            word = self._dbstore.find_one({'word'   : word_str })
+            if word:
+                word.pop('_id', None)
+            return word
+        except Exception:
+            logging.error('can\'t get access to mongodb via pymongo')
+            return None
 
     def HasWord(self, word_str):
         pass # TODO

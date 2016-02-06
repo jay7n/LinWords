@@ -68,8 +68,8 @@ def main():
             else:
                 print res.text
     except requests.exceptions.ConnectionError:
-        print 'failed to connect to path \"' + path + '\"'
-
+        print 'failed to connect to server \"' + path + '\"'
+        print 'did you open the server correctly ?'
 
 if __name__ == '__main__':
     main()
