@@ -12,8 +12,8 @@ import tornado.web
 import tornado.gen
 from bson import json_util as jutil
 
-import dictschemes.iciba_collins as scheme
-import wordstores.mongo_wordstore as wordstore
+import dictschemes.iciba_collins_scheme as dictscheme
+import wordstores.mongo_store as wordstore
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -68,7 +68,7 @@ class PendingSessionQueue(object):
 
 class WordHandler(tornado.web.RequestHandler):
     _pending_session_queue = PendingSessionQueue()
-    _wordStore = wordstore.MongoWordStore(scheme.ICiBaScheme.GetDictName())
+    _wordStore = wordstore.MongoWordStore(dictscheme.ICiBaCollinsDictScheme.GetDictName())
     _wordStore.Connect(host='youchun.li', port=27017, db_name='liwords-db')
     # _wordStore.Connect(host='localhost', port=27017, db_name='liwords-db')
 
@@ -87,11 +87,11 @@ class WordHandler(tornado.web.RequestHandler):
         pending_session_life_time = self._config['PendingSesionLifetime']
         self._pending_session_queue.remove_timeout_session(pending_session_life_time)
 
-    def _wrap_word(self, third_scheme):
-        if third_scheme.IsValid():
+    def _wrap_word(self, third_dictscheme):
+        if third_dictscheme.IsValid():
             wword = {
-                'word': third_scheme.GetWord(),
-                'definitions': third_scheme.GetDefinitions(),
+                'word': third_dictscheme.GetWord(),
+                'definitions': third_dictscheme.GetDefinitions(),
                 'exist_in_db': False
             }
             return wword
@@ -106,7 +106,7 @@ class WordHandler(tornado.web.RequestHandler):
         word = self._wordStore.GetWord(word_literal)
 
         if not word:
-            word = self._wrap_word(scheme.ICiBaScheme(word_literal))
+            word = self._wrap_word(dictscheme.ICiBaCollinsDictScheme(word_literal))
             if word is not None:
                 self._pending_session_queue.append(session['id'], word)
 

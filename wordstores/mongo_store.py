@@ -1,8 +1,13 @@
 #!/usr/bin/python
 # --coding:utf-8--
 
+import logging
+
+import wordstores.base_store as base_word_store
 import pymongo
-class MongoWordStore(WordStoreInterface):
+
+
+class MongoWordStore(base_word_store.BaseWordStore):
 
     def __init__(self, dict_store_name):
         self._dict_store_name = dict_store_name

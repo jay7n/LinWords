@@ -2,7 +2,7 @@
 # --coding:utf-8--
 
 
-class WordStoreInterface(object):
+class BaseWordStore(object):
 
     def AddWord(self, word):
         raise NotImplementedError('Should have implemented this.')

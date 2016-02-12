@@ -8,11 +8,11 @@ import json
 import logging
 
 import dictschemes.base_scheme as base_scheme
-import dictschemes.iciba_collins as iciba_collins
+import dictschemes.iciba_collins_scheme as iciba_collins_scheme
 
 logging.basicConfig(level=logging.DEBUG)
 
-_word_dict_parser = base_scheme.WordDictSchemeParser(iciba_collins.ICiBaSchemeUnitParser)
+_word_dict_parser = base_scheme.DictSchemeParser(iciba_collins_scheme.ICiBaCollinsSchemeUnitParser)
 
 
 def explain_word_and_ask(session_json, path):

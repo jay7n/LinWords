@@ -4,11 +4,11 @@
 import logging
 import bs4
 
-import dictschemes.base_scheme as base_scheme
+import dictschemes.base_scheme as base_dict_scheme
 import utils.html_helper as html_helper
 
 
-class ICiBaScheme(base_scheme.BaseWordDictScheme):
+class ICiBaCollinsDictScheme(base_dict_scheme.BaseDictScheme):
 
     @classmethod
     def GetDictName(cls):
@@ -77,7 +77,7 @@ class ICiBaScheme(base_scheme.BaseWordDictScheme):
         return self.valid
 
 
-class ICiBaSchemeUnitParser(base_scheme.BaseWordDictSchemeUnitParser):
+class ICiBaCollinsSchemeUnitParser(base_dict_scheme.BaseDictSchemeUnitParser):
 
     @classmethod
     def Parse(cls, defi):

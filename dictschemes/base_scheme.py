@@ -2,7 +2,7 @@
 # --coding:utf-8--
 
 
-class BaseWordDictScheme(object):
+class BaseDictScheme(object):
 
     @classmethod
     def GetDictName(cls):
@@ -18,7 +18,7 @@ class BaseWordDictScheme(object):
         raise NotImplementedError('Should have implemented this.')
 
 
-class BaseWordDictSchemeUnitParser(object):
+class BaseDictSchemeUnitParser(object):
 
     @classmethod
     def Parse(cls, defi):
@@ -37,7 +37,7 @@ class BaseWordDictSchemeUnitParser(object):
         raise NotImplementedError('Should have implemented this.')
 
 
-class WordDictSchemeParser(object):
+class DictSchemeParser(object):
 
     def __init__(self, unit_parser_cls):
         self.unit_parser_cls = unit_parser_cls
