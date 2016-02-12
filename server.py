@@ -12,7 +12,7 @@ import tornado.web
 import tornado.gen
 from bson import json_util as jutil
 
-import schemes.iciba_collins as scheme
+import dictschemes.iciba_collins as scheme
 import wordstores.mongo_wordstore as wordstore
 
 logging.basicConfig(level=logging.DEBUG)
@@ -69,8 +69,8 @@ class PendingSessionQueue(object):
 class WordHandler(tornado.web.RequestHandler):
     _pending_session_queue = PendingSessionQueue()
     _wordStore = wordstore.MongoWordStore(scheme.ICiBaScheme.GetDictName())
-    # _wordStore.Connect(host = 'youchun.li', port = 27017, db_name = 'liwords-db')
-    _wordStore.Connect(host='localhost', port=27017, db_name='liwords-db')
+    _wordStore.Connect(host='youchun.li', port=27017, db_name='liwords-db')
+    # _wordStore.Connect(host='localhost', port=27017, db_name='liwords-db')
 
     def __init__(self, application, request, **kwargs):
         super(WordHandler, self).__init__(application, request, **kwargs)

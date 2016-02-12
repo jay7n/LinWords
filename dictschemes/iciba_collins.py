@@ -4,7 +4,7 @@
 import logging
 import bs4
 
-import schemes.base_scheme as base_scheme
+import dictschemes.base_scheme as base_scheme
 import utils.html_helper as html_helper
 
 

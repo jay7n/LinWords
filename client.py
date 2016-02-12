@@ -7,8 +7,8 @@ import requests
 import json
 import logging
 
-import schemes.base_scheme as base_scheme
-import schemes.iciba_collins as iciba_collins
+import dictschemes.base_scheme as base_scheme
+import dictschemes.iciba_collins as iciba_collins
 
 logging.basicConfig(level=logging.DEBUG)
 
