@@ -18,16 +18,15 @@ class MongoWordStore(base_word_store.BaseWordStore):
         self._dbstore = self._db[self._dict_store_name]
 
     def AddWord(self, word):
-        assert type(
-            word['word']) == str, u'key [\'word\'] for word object %s doesn\'t \
-            match type str' % str(word)
+        assert type(word['word']) == str, u'key [\'word\'] for word object %s doesn\'t \
+                                            match type str' % str(word)
+
         if self.GetWord(word['word']):
             msg = 'word \"' + word['word'] + \
                 '\" already exists. maybe a reentry is exsiting in another \
                 session ?'
             raise RuntimeError(msg)
 
-        word['exist_in_db'] = True
         self._dbstore.insert_one(word)
 
     def GetWord(self, word_str):

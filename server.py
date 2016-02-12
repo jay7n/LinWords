@@ -92,7 +92,6 @@ class WordHandler(tornado.web.RequestHandler):
             wword = {
                 'word': third_dictscheme.GetWord(),
                 'definitions': third_dictscheme.GetDefinitions(),
-                'exist_in_db': False
             }
             return wword
 
@@ -100,7 +99,7 @@ class WordHandler(tornado.web.RequestHandler):
 
     def get(self):
         logging.debug('tornado.get!')
-        session = {'id': str(uuid.uuid4()), 'word': None}
+        session = {'id': str(uuid.uuid4()), 'word': None, 'from_store': True}
 
         word_literal = self.request.path[1:].split('/')[0]
         word = self._wordStore.GetWord(word_literal)
@@ -109,10 +108,11 @@ class WordHandler(tornado.web.RequestHandler):
             word = self._wrap_word(dictscheme.ICiBaCollinsDictScheme(word_literal))
             if word is not None:
                 self._pending_session_queue.append(session['id'], word)
+                session['from_store'] = False
 
         if word is None:
             msg = 'failed to find word \"' + word_literal + '\"'
-            logging.warning(msg)
+            logging.error(msg)
 
             self.set_status(404)
             self.write(msg)
@@ -135,14 +135,14 @@ class WordHandler(tornado.web.RequestHandler):
         msg = ''
         word_literal = self.get_argument('word')
 
-        if self.get_argument('cache_it') == 'yes':
+        if self.get_argument('store_it') == 'yes':
             session_id = self.get_argument('session_id')
             if self._pending_session_queue.has_session(session_id):
                 word = self._pending_session_queue.get_word(session_id)
                 assert word['word'] == word_literal
                 try:
                     self._wordStore.AddWord(word)
-                    msg = 'the word "' + word_literal + '" has been cached.'
+                    msg = 'the word "' + word_literal + '" has been added into the store.'
                 except RuntimeError as e:
                     msg = str(e)
             else:
@@ -150,7 +150,8 @@ class WordHandler(tornado.web.RequestHandler):
                               '" does not exsit. maybe removed due to session timeout ?')
                 msg = 'faied to add word "' + word_literal + '". probably timeout.'
         else:
-            msg = 'you deny to cache the word "' + word_literal + '". \nbye.'
+            msg = 'you deny to add the word "' + word_literal + '" to the store.\n'
+            msg += 'bye.'
 
         msg_type = type(msg)
         assert msg_type == str or msg_type == unicode, 'error: msg is not a str/unicode type!'

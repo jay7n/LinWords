@@ -7,11 +7,11 @@ class BaseWordStore(object):
     def AddWord(self, word):
         raise NotImplementedError('Should have implemented this.')
 
-    def GetWord(self, word_str):
+    def GetWord(self, word_literal):
         raise NotImplementedError('Should have implemented this.')
 
-    def HasWord(self, word_str):
+    def HasWord(self, word_literal):
         raise NotImplementedError('Should have implemented this.')
 
-    def RemoveWord(self, word_str):
+    def RemoveWord(self, word_literal):
         raise NotImplementedError('Should have implemented this.')
