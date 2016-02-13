@@ -7,12 +7,12 @@ import requests
 import json
 import logging
 
-import dictschemes.base_scheme as base_scheme
-import dictschemes.iciba_collins_scheme as iciba_collins_scheme
+from dictschemes.base_scheme import DictSchemeParser
+from dictschemes.iciba_collins_scheme import ICiBaCollinsSchemeUnitParser as SchemeUnitParser
 
 logging.basicConfig(level=logging.DEBUG)
 
-_word_dict_parser = base_scheme.DictSchemeParser(iciba_collins_scheme.ICiBaCollinsSchemeUnitParser)
+_word_dict_parser = DictSchemeParser(SchemeUnitParser)
 
 
 def explain_word_and_ask(session_json, path):
@@ -20,9 +20,9 @@ def explain_word_and_ask(session_json, path):
     session_id = session_dict['id']
     logging.debug(session_id)
     word_dict = session_dict['word']
+    from_store = session_dict['from_store']
 
     word = word_dict['word']
-    from_store = word_dict['from_store']
     definitions = _word_dict_parser.ParseAllDefinitions(word_dict['definitions'])
 
     print

@@ -3,11 +3,11 @@
 
 import logging
 
-import wordstores.base_store as base_word_store
+from wordstores.base_store import BaseWordStore
 import pymongo
 
 
-class MongoWordStore(base_word_store.BaseWordStore):
+class MongoWordStore(BaseWordStore):
 
     def __init__(self, dict_store_name):
         self._dict_store_name = dict_store_name

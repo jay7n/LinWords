@@ -12,8 +12,11 @@ import tornado.web
 import tornado.gen
 from bson import json_util as jutil
 
-import dictschemes.iciba_collins_scheme as dictscheme
-import wordstores.mongo_store as wordstore
+from dictschemes.iciba_collins_scheme import ICiBaCollinsDictScheme as DictScheme
+from wordstores.mongo_store import MongoWordStore as WordStore
+from rankpolicies.simple_policy import SimpleRankPolicy as RankPolicy
+
+import utils.word_helper as word_helper
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -68,7 +71,7 @@ class PendingSessionQueue(object):
 
 class WordHandler(tornado.web.RequestHandler):
     _pending_session_queue = PendingSessionQueue()
-    _wordStore = wordstore.MongoWordStore(dictscheme.ICiBaCollinsDictScheme.GetDictName())
+    _wordStore = WordStore(DictScheme.GetDictName())
     _wordStore.Connect(host='youchun.li', port=27017, db_name='liwords-db')
     # _wordStore.Connect(host='localhost', port=27017, db_name='liwords-db')
 
@@ -87,16 +90,6 @@ class WordHandler(tornado.web.RequestHandler):
         pending_session_life_time = self._config['PendingSesionLifetime']
         self._pending_session_queue.remove_timeout_session(pending_session_life_time)
 
-    def _wrap_word(self, third_dictscheme):
-        if third_dictscheme.IsValid():
-            wword = {
-                'word': third_dictscheme.GetWord(),
-                'definitions': third_dictscheme.GetDefinitions(),
-            }
-            return wword
-
-        return None
-
     def get(self):
         logging.debug('tornado.get!')
         session = {'id': str(uuid.uuid4()), 'word': None, 'from_store': True}
@@ -104,11 +97,17 @@ class WordHandler(tornado.web.RequestHandler):
         word_literal = self.request.path[1:].split('/')[0]
         word = self._wordStore.GetWord(word_literal)
 
-        if not word:
-            word = self._wrap_word(dictscheme.ICiBaCollinsDictScheme(word_literal))
+        if word is None:
+            word_scheme = DictScheme(word_literal)
+            word = word_helper.pack_word(
+                word=word_literal,
+                definitions=word_scheme.GetDefinitions(),
+                rank=0) if word_scheme.IsValid() else None
+
             if word is not None:
                 self._pending_session_queue.append(session['id'], word)
                 session['from_store'] = False
+        # else:
 
         if word is None:
             msg = 'failed to find word \"' + word_literal + '\"'
