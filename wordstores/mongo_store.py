@@ -3,8 +3,17 @@
 
 import logging
 
-from wordstores.base_store import BaseWordStore
 import pymongo
+
+from wordstores.base_store import BaseWordStore
+
+import utils.word_helper as word_helper
+
+
+def _validate_word_or_raise(word):
+    if word_helper.validate_word(word) is False:
+        msg = u'key [\'word\'] for word object %s doesn\'t match type str' % str(word)
+        raise Exception(msg)
 
 
 class MongoWordStore(BaseWordStore):
@@ -18,14 +27,13 @@ class MongoWordStore(BaseWordStore):
         self._dbstore = self._db[self._dict_store_name]
 
     def AddWord(self, word):
-        assert type(word['word']) == str, u'key [\'word\'] for word object %s doesn\'t \
-                                            match type str' % str(word)
+        _validate_word_or_raise(word)
 
         if self.GetWord(word['word']):
             msg = 'word \"' + word['word'] + \
                 '\" already exists. maybe a reentry is exsiting in another \
                 session ?'
-            raise RuntimeError(msg)
+            raise Exception(msg)
 
         self._dbstore.insert_one(word)
 
@@ -38,6 +46,14 @@ class MongoWordStore(BaseWordStore):
         except Exception:
             logging.error('can\'t get access to mongodb via pymongo')
             return None
+
+    def UpdateWord(self, word):
+        _validate_word_or_raise(word)
+
+        if self.GetWord(word['word']) is None:
+            pass  # TODO
+        else:
+            self._dbstore.update_one({'word': word['word']}, word)
 
     def HasWord(self, word_str):
         pass  # TODO

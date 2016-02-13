@@ -10,6 +10,9 @@ class BaseWordStore(object):
     def GetWord(self, word_literal):
         raise NotImplementedError('Should have implemented this.')
 
+    def UpdateWord(self, word):
+        raise NotImplementedError('Should have implemented this.')
+
     def HasWord(self, word_literal):
         raise NotImplementedError('Should have implemented this.')
 

@@ -107,7 +107,15 @@ class WordHandler(tornado.web.RequestHandler):
             if word is not None:
                 self._pending_session_queue.append(session['id'], word)
                 session['from_store'] = False
-        # else:
+        else:
+            try:
+                rank_policy = RankPolicy(word, self._wordStore)
+                # since this word has been in the store and now it is asked again,
+                # we rank its priority value up
+                rank_policy.RankUp()
+            except Exception as e:
+                word = None
+                logging.error(str(e))
 
         if word is None:
             msg = 'failed to find word \"' + word_literal + '\"'

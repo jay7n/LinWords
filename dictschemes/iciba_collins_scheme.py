@@ -58,8 +58,8 @@ class ICiBaCollinsDictScheme(BaseDictScheme):
         return definitions
 
     def __init__(self, word):
-        url = 'http://www.iciba.com/' + word
         try:
+            url = 'http://www.iciba.com/' + word
             html_content = html_helper.grab_html_content(url)
             self.definitions = self._parseHtmlContent(html_content)
             self.word = word

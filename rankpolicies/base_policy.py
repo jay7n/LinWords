@@ -4,10 +4,10 @@
 
 class BaseRankPolicy(object):
 
-    def RankUp(self, word, word_store):
+    def RankUp(self):
         raise NotImplementedError('Should have implemented this.')
 
-    def RankDown(self, word, word_store):
+    def RankDown(self):
         raise NotImplementedError('Should have implemented this.')
 
     def Query(self, num=1):
