@@ -15,13 +15,10 @@ class SimpleRankPolicy(BaseRankPolicy):
             raise Exception('given word is not a valid object that conforms to the word dict keys')
 
     def RankUp(self):
-        self.word['rank'] += 1
-        self.word_store.UpdateWord(self.word)
+        rank = self.word['rank']
+        self.word_store.UpdateWordProperty(self.word, 'rank', rank + 1)
 
     def RankDown(self):
         if self.word['rank'] > 0:
-            self.word['rank'] -= 1
-            self.word_store.UpdateWord(self.word)
-
-    def Query(self, num=1):
-        raise NotImplementedError('Should have implemented this.')
+            rank = self.word['rank']
+            self.word_store.UpdateWordProperty(self.word, 'rank', rank - 1)

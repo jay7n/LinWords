@@ -90,11 +90,12 @@ class WordHandler(tornado.web.RequestHandler):
         pending_session_life_time = self._config['PendingSesionLifetime']
         self._pending_session_queue.remove_timeout_session(pending_session_life_time)
 
-    def get(self):
-        logging.debug('tornado.get!')
-        session = {'id': str(uuid.uuid4()), 'word': None, 'from_store': True}
+    def _spot_exam(self):
+        sort_method = {'field': 'rank', 'direction': -1}
+        word = self._wordStore.GetWordBySort(sort_method)
+        return word
 
-        word_literal = self.request.path[1:].split('/')[0]
+    def _lookup_word(self, word_literal):
         word = self._wordStore.GetWord(word_literal)
 
         if word is None:
@@ -123,8 +124,24 @@ class WordHandler(tornado.web.RequestHandler):
 
             self.set_status(404)
             self.write(msg)
+
+        return word
+
+    def get(self):
+        logging.debug('tornado.get!')
+
+        word = None
+        word_literal = self.request.path[1:].split('/')[0]
+
+        if word_literal == 'linwords':
+            word = self._spot_exam()
+        else:
+            word = self._lookup_word(word_literal)
+
+        if word is None:
             return
 
+        session = {'id': str(uuid.uuid4()), 'word': None, 'from_store': True}
         session['word'] = word
         res = jutil.dumps(session)
 

@@ -57,8 +57,9 @@ def explain_word_and_ask(session_json, path):
 
 
 def main():
-    word = sys.argv[1:]
-    word = ' '.join(word)
+    word = ' '.join(sys.argv[1:])
+    if word == '':  # empty str means no extra args
+        word = 'linwords'
 
     path = 'http://localhost:8000/%s/json' % word
     try:
