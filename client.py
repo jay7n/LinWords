@@ -15,16 +15,7 @@ logging.basicConfig(level=logging.DEBUG)
 _word_dict_parser = DictSchemeParser(SchemeUnitParser)
 
 
-def explain_word_and_ask(session_json, path):
-    session_dict = json.loads(session_json)
-    session_id = session_dict['id']
-    logging.debug(session_id)
-    word_dict = session_dict['word']
-    from_store = session_dict['from_store']
-
-    word = word_dict['word']
-    definitions = _word_dict_parser.ParseAllDefinitions(word_dict['definitions'])
-
+def print_definitions(word, definitions):
     print
     print word
     print '---------------------'
@@ -38,22 +29,48 @@ def explain_word_and_ask(session_json, path):
 
         print
 
-    if not from_store:
-        res = raw_input('this word hasn\'t been added in the store. add it ? (y/n) ')
 
-        answer = {'session_id': session_id, 'word': word, 'store_it': 'nope'}
+def explain_word_and_ask(session_json, path):
+    session_dict = json.loads(session_json)
+    session_id = session_dict['id']
+    logging.debug(session_id)
 
-        if res == 'y' or res == 'yes' or res == '':
-            answer['store_it'] = 'yes'
+    session_type = session_dict['type']
+    word_dict = session_dict['word']
+    from_store = session_dict['from_store']
+
+    word = word_dict['word']
+    definitions = _word_dict_parser.ParseAllDefinitions(word_dict['definitions'])
+    answer = {'session_id': session_id, 'word': word,
+              'type': session_type, 'store_it': 'nope', 'recognize': 'nope'}
+    res = None
+
+    if session_type == 'lookup_word':
+        print_definitions(word, definitions)
+
+        if not from_store:
+            res = raw_input('this word hasn\'t been added in the store. add it ? (y/n) ')
+
+            if res == 'y' or res == 'yes' or res == '':
+                answer['store_it'] = 'yes'
+
             res = requests.post(path, auth=('user', 'pass'), data=answer)
 
-            if res.status_code == 200:
-                print res.text
-            else:
-                print 'error: status_code:' + str(res.status_code)
+    elif session_type == 'spot_exam':
+        print word
+        print
+        res = raw_input('do you recognize this word ? ')
+
+        if res == 'y' or res == 'yes':
+            answer['recognize'] = 'yes'
         else:
-            res = requests.post(path, auth=('user', 'pass'), data=answer)
-            print res.text
+            print_definitions(word, definitions)
+
+    res = requests.post(path, auth=('user', 'pass'), data=answer)
+    if res.status_code == 200:
+        print res.text
+    else:
+        print 'error: status_code:' + str(res.status_code)
 
 
 def main():

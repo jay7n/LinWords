@@ -12,11 +12,11 @@ import tornado.web
 import tornado.gen
 from bson import json_util as jutil
 
+import utils.word_helper as word_helper
 from dictschemes.iciba_collins_scheme import ICiBaCollinsDictScheme as DictScheme
 from wordstores.mongo_store import MongoWordStore as WordStore
 from rankpolicies.simple_policy import SimpleRankPolicy as RankPolicy
 
-import utils.word_helper as word_helper
 
 logging.basicConfig(level=logging.DEBUG)
 
@@ -93,10 +93,16 @@ class WordHandler(tornado.web.RequestHandler):
     def _spot_exam(self):
         sort_method = {'field': 'rank', 'direction': -1}
         word = self._wordStore.GetWordBySort(sort_method)
+        if word is None:
+            msg = 'failed to retrieve an appropriate word as the exam'
+            logging.error(msg)
+            self.write(msg)
+
         return word
 
     def _lookup_word(self, word_literal):
         word = self._wordStore.GetWord(word_literal)
+        from_store = word is not None
 
         if word is None:
             word_scheme = DictScheme(word_literal)
@@ -104,10 +110,6 @@ class WordHandler(tornado.web.RequestHandler):
                 word=word_literal,
                 definitions=word_scheme.GetDefinitions(),
                 rank=0) if word_scheme.IsValid() else None
-
-            if word is not None:
-                self._pending_session_queue.append(session['id'], word)
-                session['from_store'] = False
         else:
             try:
                 rank_policy = RankPolicy(word, self._wordStore)
@@ -121,27 +123,36 @@ class WordHandler(tornado.web.RequestHandler):
         if word is None:
             msg = 'failed to find word \"' + word_literal + '\"'
             logging.error(msg)
-
-            self.set_status(404)
             self.write(msg)
 
-        return word
+        return word, from_store
 
     def get(self):
         logging.debug('tornado.get!')
 
-        word = None
+        session = {'id': str(uuid.uuid4()),
+                   'type': 'lookup_word',  # default to lookup_word
+                   'word': None,  # fill this field later
+                   'from_store': True  # default to from_store
+                   }
+
         word_literal = self.request.path[1:].split('/')[0]
+        word = None
 
         if word_literal == 'linwords':
+            session['type'] = 'spot_exam'
             word = self._spot_exam()
+            self._pending_session_queue.append(session['id'], word)
         else:
-            word = self._lookup_word(word_literal)
+            word, from_store = self._lookup_word(word_literal)
+            if word and not from_store:
+                self._pending_session_queue.append(session['id'], word)
+                session['from_store'] = False
 
         if word is None:
+            self.set_status(404)
             return
 
-        session = {'id': str(uuid.uuid4()), 'word': None, 'from_store': True}
         session['word'] = word
         res = jutil.dumps(session)
 
@@ -158,24 +169,41 @@ class WordHandler(tornado.web.RequestHandler):
     def post(self):
         msg = ''
         word_literal = self.get_argument('word')
+        answer_type = self.get_argument('type')
+        word = None
 
-        if self.get_argument('store_it') == 'yes':
-            session_id = self.get_argument('session_id')
-            if self._pending_session_queue.has_session(session_id):
-                word = self._pending_session_queue.get_word(session_id)
-                assert word['word'] == word_literal
-                try:
-                    self._wordStore.AddWord(word)
-                    msg = 'the word "' + word_literal + '" has been added into the store.'
-                except RuntimeError as e:
-                    msg = str(e)
+        session_id = self.get_argument('session_id')
+        if self._pending_session_queue.has_session(session_id):
+            word = self._pending_session_queue.get_word(session_id)
+            assert word['word'] == word_literal
+
+        if answer_type == 'lookup_word':
+            if self.get_argument('store_it') == 'yes':
+                if word:
+                    try:
+                        self._wordStore.AddWord(word)
+                        msg = 'the word "' + word_literal + '" has been added into the store.'
+                    except RuntimeError as e:
+                        msg = str(e)
+                else:
+                    logging.debug('session "' + session_id +
+                                  '" does not exsit. maybe removed due to session timeout ?')
+                    msg = 'faied to add word "' + word_literal + '". probably timeout.'
             else:
-                logging.debug('session "' + session_id +
-                              '" does not exsit. maybe removed due to session timeout ?')
-                msg = 'faied to add word "' + word_literal + '". probably timeout.'
-        else:
-            msg = 'you deny to add the word "' + word_literal + '" to the store.\n'
-            msg += 'bye.'
+                msg = 'you deny to add the word "' + word_literal + '" to the store.\n'
+                msg += 'bye.'
+
+        elif answer_type == 'spot_exam':
+            rank_policy = RankPolicy(word, self._wordStore)
+            try:
+                if self.get_argument('recognize') == 'yes':
+                    rank_policy.RankDown()
+                    msg = 'good. this word has been ranked down.'
+                else:
+                    rank_policy.RankUp()
+                    msg = 'well, this word has been ranked up.'
+            except Exception as e:
+                msg = str(e)
 
         msg_type = type(msg)
         assert msg_type == str or msg_type == unicode, 'error: msg is not a str/unicode type!'
