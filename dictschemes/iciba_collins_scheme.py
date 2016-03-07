@@ -4,11 +4,13 @@
 import logging
 import bs4
 
-import schemes.base_scheme as base_scheme
+from dictschemes.base_scheme import BaseDictScheme
+from dictschemes.base_scheme import BaseDictSchemeUnitParser
+
 import utils.html_helper as html_helper
 
 
-class ICiBaScheme(base_scheme.BaseWordDictScheme):
+class ICiBaCollinsDictScheme(BaseDictScheme):
 
     @classmethod
     def GetDictName(cls):
@@ -56,16 +58,16 @@ class ICiBaScheme(base_scheme.BaseWordDictScheme):
         return definitions
 
     def __init__(self, word):
-        url = 'http://www.iciba.com/' + word
-        # try:
-        html_content = html_helper.grab_html_content(url)
-        self.definitions = self._parseHtmlContent(html_content)
-        self.word = word
-        self.valid = True
-        # except Exception:
-        # self.valid = False
-        # self.word = None
-        # self.definitions = None
+        try:
+            url = 'http://www.iciba.com/' + word
+            html_content = html_helper.grab_html_content(url)
+            self.definitions = self._parseHtmlContent(html_content)
+            self.word = word
+            self.valid = True
+        except Exception:
+            self.valid = False
+            self.word = None
+            self.definitions = None
 
     def GetWord(self):
         return self.word
@@ -77,7 +79,7 @@ class ICiBaScheme(base_scheme.BaseWordDictScheme):
         return self.valid
 
 
-class ICiBaSchemeUnitParser(base_scheme.BaseWordDictSchemeUnitParser):
+class ICiBaCollinsSchemeUnitParser(BaseDictSchemeUnitParser):
 
     @classmethod
     def Parse(cls, defi):

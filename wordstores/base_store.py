@@ -2,16 +2,19 @@
 # --coding:utf-8--
 
 
-class WordStoreInterface(object):
+class BaseWordStore(object):
 
     def AddWord(self, word):
         raise NotImplementedError('Should have implemented this.')
 
-    def GetWord(self, word_str):
+    def GetWord(self, word_literal):
         raise NotImplementedError('Should have implemented this.')
 
-    def HasWord(self, word_str):
+    def UpdateWordProperty(self, word, property, value):
         raise NotImplementedError('Should have implemented this.')
 
-    def RemoveWord(self, word_str):
+    def HasWord(self, word_literal):
+        raise NotImplementedError('Should have implemented this.')
+
+    def RemoveWord(self, word_literal):
         raise NotImplementedError('Should have implemented this.')

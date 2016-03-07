@@ -7,24 +7,15 @@ import requests
 import json
 import logging
 
-import schemes.base_scheme as base_scheme
-import schemes.iciba_collins as iciba_collins
+from dictschemes.base_scheme import DictSchemeParser
+from dictschemes.iciba_collins_scheme import ICiBaCollinsSchemeUnitParser as SchemeUnitParser
 
 logging.basicConfig(level=logging.DEBUG)
 
-_word_dict_parser = base_scheme.WordDictSchemeParser(iciba_collins.ICiBaSchemeUnitParser)
+_word_dict_parser = DictSchemeParser(SchemeUnitParser)
 
 
-def explain_word_and_ask(session_json, path):
-    session_dict = json.loads(session_json)
-    session_id = session_dict['id']
-    logging.debug(session_id)
-    word_dict = session_dict['word']
-
-    word = word_dict['word']
-    exist = word_dict['exist_in_db']
-    definitions = _word_dict_parser.ParseAllDefinitions(word_dict['definitions'])
-
+def print_definitions(word, definitions):
     print
     print word
     print '---------------------'
@@ -38,28 +29,54 @@ def explain_word_and_ask(session_json, path):
 
         print
 
-    if not exist:
-        res = raw_input('this word hasn\'t been joined in the cache. joined it ? (y/n) ')
 
-        answer = {'session_id': session_id, 'word': word, 'cache_it': 'undefined'}
+def explain_word_and_ask(session_json, path):
+    session_dict = json.loads(session_json)
+    session_id = session_dict['id']
+    logging.debug(session_id)
 
-        if res == 'y' or res == 'yes' or res == '':
-            answer['cache_it'] = 'yes'
+    session_type = session_dict['type']
+    word_dict = session_dict['word']
+    from_store = session_dict['from_store']
+
+    word = word_dict['word']
+    definitions = _word_dict_parser.ParseAllDefinitions(word_dict['definitions'])
+    answer = {'session_id': session_id, 'word': word,
+              'type': session_type, 'store_it': 'nope', 'recognize': 'nope'}
+    res = None
+
+    if session_type == 'lookup_word':
+        print_definitions(word, definitions)
+
+        if not from_store:
+            res = raw_input('this word hasn\'t been added in the store. add it ? (y/n) ')
+
+            if res == 'y' or res == 'yes' or res == '':
+                answer['store_it'] = 'yes'
+
             res = requests.post(path, auth=('user', 'pass'), data=answer)
 
-            if res.status_code == 200:
-                print res.text
-            else:
-                print 'error: status_code:' + str(res.status_code)
+    elif session_type == 'spot_exam':
+        print word
+        print
+        res = raw_input('do you recognize this word ? ')
+
+        if res == 'y' or res == 'yes':
+            answer['recognize'] = 'yes'
         else:
-            answer['cache_it'] = 'nope'
-            res = requests.post(path, auth=('user', 'pass'), data=answer)
-            print res.text
+            print_definitions(word, definitions)
+
+    res = requests.post(path, auth=('user', 'pass'), data=answer)
+    if res.status_code == 200:
+        print res.text
+    else:
+        print 'error: status_code:' + str(res.status_code)
 
 
 def main():
-    word = sys.argv[1:]
-    word = ' '.join(word)
+    word = ' '.join(sys.argv[1:])
+    if word == '':  # empty str means no extra args
+        word = 'linwords'
 
     path = 'http://localhost:8000/%s/json' % word
     try:
