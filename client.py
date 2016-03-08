@@ -20,14 +20,37 @@ def print_definitions(word, definitions):
     print word
     print '---------------------'
     for idx, defi in enumerate(definitions):
-        print ''.join([str(idx), '. ', defi.GetWordClass()])
-        print ''.join([defi.GetEnglishDefi(), '  ', defi.GetChineseDefi()])
+        if defi.IsOfCustom():
+            custom = defi.GetCustom()
+            title = custom.GetTitle()
 
-        for elm in defi.GetExamples():
-            print '\t' + elm['en_eg']
-            print '\t' + elm['cn_eg']
+            if title is not None:
+                print '>>>>>>>>>>>>>>>>>>>>>>>>>>>>>'
+                print title
+                print
 
-        print
+                for list_elem in custom.GetList():
+                    print '\t' + list_elem
+                    print
+
+                for elem_key, elem_value in custom.GetMap().iteritems():
+                    print '\t' + elem_key + ':'
+                    print '\t\t' + elem_value
+                    print
+
+                print '<<<<<<<<<<<<<<<<<<<<<<<<<<<<<'
+
+            print
+
+        else:
+            print ''.join([str(idx), '. ', defi.GetWordClass()])
+            print ''.join([defi.GetEnglishDefi(), '  ', defi.GetChineseDefi()])
+
+            for elm in defi.GetExamples():
+                print '\t' + elm['en_eg']
+                print '\t' + elm['cn_eg']
+
+            print
 
 
 def explain_word_and_ask(session_json, path):
@@ -55,6 +78,8 @@ def explain_word_and_ask(session_json, path):
                 answer['store_it'] = 'yes'
 
             res = requests.post(path, auth=('user', 'pass'), data=answer)
+        else:
+            answer = None
 
     elif session_type == 'spot_exam':
         print word
@@ -66,11 +91,12 @@ def explain_word_and_ask(session_json, path):
         else:
             print_definitions(word, definitions)
 
-    res = requests.post(path, auth=('user', 'pass'), data=answer)
-    if res.status_code == 200:
-        print res.text
-    else:
-        print 'error: status_code:' + str(res.status_code)
+    if answer is not None:
+        res = requests.post(path, auth=('user', 'pass'), data=answer)
+        if res.status_code == 200:
+            print res.text
+        else:
+            print 'error: status_code:' + str(res.status_code)
 
 
 def main():
