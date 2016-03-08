@@ -31,8 +31,7 @@ class MongoWordStore(BaseWordStore):
 
         if self.GetWord(word['word']):
             msg = 'word \"' + word['word'] + \
-                '\" already exists. maybe a reentry is exsiting in another \
-                session ?'
+                '\" already exists. maybe a reentry is exsiting in another session ?'
             raise Exception(msg)
 
         self._dbstore.insert_one(word)

@@ -5,6 +5,7 @@ import logging
 import bs4
 
 from dictschemes.base_scheme import BaseDictScheme
+from dictschemes.base_scheme import CustomDictSchemeUnit
 from dictschemes.base_scheme import BaseDictSchemeUnitParser
 
 import utils.html_helper as html_helper
@@ -16,28 +17,68 @@ class ICiBaCollinsDictScheme(BaseDictScheme):
     def GetDictName(cls):
         return "ICiBaScheme_Collins"
 
-    def _parseCollinsSectionPrep(self, section_prep):
-        sp = section_prep
+    def _parseTextParagraph(self, text_paragraph):
+        try:
+            tp = text_paragraph
 
-        # We didn't handle 'Suggestions' for now
-        if sp.find(class_='suggest'):
+            title = tp.find(class_='pragraph-h family-english size-english').text
+            res = CustomDictSchemeUnit(title)
+
+            en_item = tp.find(class_='p-english').text
+            cn_item = tp.find(class_='p-chinese family-chinese size-chinese size-chinese').text
+            res.AppendListElem(en_item)
+            res.AppendListElem(cn_item)
+
+            res = res.Encode()
+            res['type'] = 'custom'
+            return res
+
+        except Exception as e:
+            logging.error(str(e))
             return None
 
-        res = {}
-        res['word class'] = sp.find(class_='family-english').text
-        res['english defi'] = sp.find(class_='family-english size-english prep-en').text
-        res['chinese defi'] = sp.find(class_='family-chinese').text
-        res_examples = []
+    def _parseSuggestion(self, suggestion):
+        try:
+            su = suggestion
+            sug_items = su.find_all(class_='sug-text')
 
-        example_sentences = sp.find(class_='text-sentence').find_all(class_='sentence-item')
-        for example in example_sentences:
-            en_eg = example.find(class_='family-english').text
-            cn_eg = example.find(class_='family-chinese').text
+            res = CustomDictSchemeUnit('Suggest')
 
-            res_examples.append({'en_eg': en_eg, 'cn_eg': cn_eg})
+            for item in sug_items:
+                res.AppendListElem(item.text)
 
-        res['examples'] = res_examples
-        return res
+            res = res.Encode()
+            res['type'] = 'custom'
+            return res
+
+        except Exception as e:
+            logging.error(str(e))
+            return None
+
+    def _parseSectionPrep(self, section_prep):
+        try:
+            sp = section_prep
+
+            res = {}
+            res['type'] = 'normal'
+            res['word class'] = sp.find(class_='family-english').text
+            res['english defi'] = sp.find(class_='family-english size-english prep-en').text
+            res['chinese defi'] = sp.find(class_='family-chinese').text
+            res_examples = []
+
+            example_sentences = sp.find(class_='text-sentence').find_all(class_='sentence-item')
+            for example in example_sentences:
+                en_eg = example.find(class_='family-english').text
+                cn_eg = example.find(class_='family-chinese').text
+
+                res_examples.append({'en_eg': en_eg, 'cn_eg': cn_eg})
+
+            res['examples'] = res_examples
+            return res
+
+        except Exception as e:
+            logging.error(str(e))
+            return None  # we do not handle anything here, just in case crash
 
     def _parseHtmlContent(self, html_content):
         if not html_content:
@@ -51,8 +92,22 @@ class ICiBaCollinsDictScheme(BaseDictScheme):
 
         definitions = []
         for section_prep in collins_section_preps:
-            defi = self._parseCollinsSectionPrep(section_prep)
-            if defi:
+            defi = None
+
+            tp = section_prep.find(class_='text-paragraph')
+            if tp is not None:
+                defi = self._parseTextParagraph(tp)
+                if defi is not None:
+                    definitions.append(defi)
+
+            su = section_prep.find(class_='suggest')
+            if su is not None:
+                defi = self._parseSuggestion(su)
+                if defi is not None:
+                    definitions.append(defi)
+
+            defi = self._parseSectionPrep(section_prep)
+            if defi is not None:
                 definitions.append(defi)
 
         return definitions
@@ -64,7 +119,8 @@ class ICiBaCollinsDictScheme(BaseDictScheme):
             self.definitions = self._parseHtmlContent(html_content)
             self.word = word
             self.valid = True
-        except Exception:
+        except Exception as e:
+            logging.error(str(e))
             self.valid = False
             self.word = None
             self.definitions = None
@@ -83,18 +139,35 @@ class ICiBaCollinsSchemeUnitParser(BaseDictSchemeUnitParser):
 
     @classmethod
     def Parse(cls, defi):
-        wc = defi['word class']
-        ed = defi['english defi']
-        cd = defi['chinese defi']
-        eg = defi['examples']
+        ins = cls()
 
-        return cls(wc, ed, cd, eg)
+        if defi['type'] == 'normal':
+            wc = defi['word class']
+            ed = defi['english defi']
+            cd = defi['chinese defi']
+            eg = defi['examples']
+            ins._setForNormal(wc, ed, cd, eg)
 
-    def __init__(self, word_class, english_defi, chinese_defi, examples):
+        elif defi['type'] == 'custom':
+            ins._setForCustom(defi)
+
+        return ins
+
+    def _setForNormal(self, word_class, english_defi, chinese_defi, examples):
         self.word_class = word_class
         self.english_defi = english_defi
         self.chinese_defi = chinese_defi
         self.examples = examples
+
+        self.custom = None
+
+    def _setForCustom(self, custom):
+        self.custom = CustomDictSchemeUnit.Decode(custom)
+
+        self.word_class = self.english_defi = self.chinese_defi = self.examples = None
+
+    def IsOfCustom(self):
+        return self.custom is not None
 
     def GetWordClass(self):
         return self.word_class
@@ -107,3 +180,6 @@ class ICiBaCollinsSchemeUnitParser(BaseDictSchemeUnitParser):
 
     def GetExamples(self):
         return self.examples
+
+    def GetCustom(self):
+        return self.custom
