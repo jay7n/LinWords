@@ -15,9 +15,9 @@ logging.basicConfig(level=logging.DEBUG)
 _word_dict_parser = DictSchemeParser(SchemeUnitParser)
 
 
-def print_definitions(word, definitions):
+def print_definitions(word, phonetic_sym_list, definitions):
     print
-    print word
+    print word + '  ' + ', '.join(phonetic_sym_list)
     print '---------------------'
     for idx, defi in enumerate(definitions):
         if defi.IsOfCustom():
@@ -49,6 +49,7 @@ def print_definitions(word, definitions):
             for elm in defi.GetExamples():
                 print '\t' + elm['en_eg']
                 print '\t' + elm['cn_eg']
+                print
 
             print
 
@@ -63,13 +64,14 @@ def explain_word_and_ask(session_json, path):
     from_store = session_dict['from_store']
 
     word = word_dict['word']
+    phonetic_sym = word_dict['phonetic_sym']
     definitions = _word_dict_parser.ParseAllDefinitions(word_dict['definitions'])
     answer = {'session_id': session_id, 'word': word,
               'type': session_type, 'store_it': 'nope', 'recognize': 'nope'}
     res = None
 
     if session_type == 'lookup_word':
-        print_definitions(word, definitions)
+        print_definitions(word, phonetic_sym, definitions)
 
         if not from_store:
             res = raw_input('this word hasn\'t been added in the store. add it ? (y/n) ')

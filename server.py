@@ -72,8 +72,8 @@ class PendingSessionQueue(object):
 class WordHandler(tornado.web.RequestHandler):
     _pending_session_queue = PendingSessionQueue()
     _wordStore = WordStore(DictScheme.GetDictName())
-    _wordStore.Connect(host='youchun.li', port=27017, db_name='liwords-db')
-    # _wordStore.Connect(host='localhost', port=27017, db_name='liwords-db')
+    # _wordStore.Connect(host='youchun.li', port=27017, db_name='liwords-db')
+    _wordStore.Connect(host='localhost', port=27017, db_name='liwords-db')
 
     def __init__(self, application, request, **kwargs):
         super(WordHandler, self).__init__(application, request, **kwargs)
@@ -108,6 +108,7 @@ class WordHandler(tornado.web.RequestHandler):
             word_scheme = DictScheme(word_literal)
             word = word_helper.pack_word(
                 word=word_literal,
+                phonetic_sym=word_scheme.GetPhoneticSymbols(),
                 definitions=word_scheme.GetDefinitions(),
                 rank=0) if word_scheme.IsValid() else None
         else:

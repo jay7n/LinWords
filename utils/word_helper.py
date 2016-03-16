@@ -4,9 +4,10 @@
 import logging
 
 
-def pack_word(word, definitions, rank):
+def pack_word(word, phonetic_sym, definitions, rank):
     return {
         'word': word,
+        'phonetic_sym': phonetic_sym,
         'definitions': definitions,
         'rank': rank
     }

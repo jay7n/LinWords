@@ -84,7 +84,19 @@ class ICiBaCollinsDictScheme(BaseDictScheme):
         if not html_content:
             return
 
+        phonetics = []
         soup = bs4.BeautifulSoup(html_content, "html.parser")
+        base_speak_tag = soup.find(class_='base-speak')
+        try:
+            bs = base_speak_tag
+            spans = bs.find_all(name='span')
+            for span in spans:
+                phonetics.append(span.text)
+        except Exception as e:
+            logging.error(str(e))
+            logging.warning(
+                'failed to locate the phonetic symbol for the word \'' + self.word + '\'')
+
         collins_tag = soup.find(name='li', text=u'柯林斯高阶英汉双解学习词典')
         collins_tag = collins_tag.parent.next_sibling.next_sibling
         collins_section_preps = collins_tag.find(
@@ -110,23 +122,29 @@ class ICiBaCollinsDictScheme(BaseDictScheme):
             if defi is not None:
                 definitions.append(defi)
 
-        return definitions
+        return phonetics, definitions
 
     def __init__(self, word):
         try:
-            url = 'http://www.iciba.com/' + word
-            html_content = html_helper.grab_html_content(url)
-            self.definitions = self._parseHtmlContent(html_content)
             self.word = word
             self.valid = True
+            self.phonetics = []
+
+            url = 'http://www.iciba.com/' + word
+            html_content = html_helper.grab_html_content(url)
+            self.phonetics, self.definitions = self._parseHtmlContent(html_content)
         except Exception as e:
             logging.error(str(e))
-            self.valid = False
             self.word = None
+            self.valid = False
             self.definitions = None
+            self.phonetics = None
 
     def GetWord(self):
         return self.word
+
+    def GetPhoneticSymbols(self):
+        return self.phonetics
 
     def GetDefinitions(self):
         return self.definitions
