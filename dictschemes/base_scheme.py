@@ -13,6 +13,9 @@ class BaseDictScheme(object):
     def GetWord(self):
         raise NotImplementedError('Should have implemented this.')
 
+    def GetPhoneticSymbols(self):
+        raise NotImplementedError('Should have implemented this.')
+
     def GetDefinitions(self):
         raise NotImplementedError('Should have implemented this.')
 
